@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>かけつけたい</title>
+
+    <link href='//fonts.googleapis.com/css?family=Roboto+Slab:400,700,300,100' rel='stylesheet' type='text/css'>
+    <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js"></script>
+
+    <script src="bluemixws.js"></script>
+    <script src="app.js"></script>
+    <link href="css/style.css" rel="stylesheet" media="screen">
+</head>
+<body>
+
+<div class="title">
+    <div>
+        <a href="/">かけつけたい</a>
+    </div>
+    <div style="float: right">
+        <a href="#" id="mode_map">MAP</a>
+        <a href="#" id="mode_radar">RADAR</a>
+    </div>
+</div>
+
+<div id="content">
+
+<!-- Map -->
+<div id="map">
+</div>
+
+<!-- Rader -->
+<div id="radar">
+<canvas id="radar_canvas"></canvas>
+</div>
+
+</div>
+</body>
+</html>
