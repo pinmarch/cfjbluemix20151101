@@ -78,14 +78,19 @@ $(function () {
         var m2 = new google.maps.Marker(md);
         hotspots[data.deviceId] =
             { deviceObj: data, marker: m, markerbg: m2, latest: t };
-        // 29秒後に地図から消すかの判断をするようタイマーをセット
-        setTimeout(function() { clearData(data); }, 29000);
+
+        // 9秒後に地図から消すかの判断をするようタイマーをセット
+        setTimeout(function() { clearData(data); }, 9000);
     }
 
     // 5秒以内にデバイスのデータが届いていなければ地図から消す
     function clearData(data) {
         var t = (new Date()).getTime();
-        if (t - hotspots[data.deviceId].latest < 5000) { return; }
+        if (t - hotspots[data.deviceId].latest < 5000) {
+            // 9秒後に地図から消すかの判断をするようタイマーをセット
+            setTimeout(function() { clearData(data); }, 9000);
+            return;
+        }
 
         hotspots[data.deviceId].marker.setMap(null);
         hotspots[data.deviceId].markerbg.setMap(null);
