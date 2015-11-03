@@ -53,11 +53,15 @@ $(function () {
         window.gmap_currentpos = undefined;
 
         // set current position
-        showCurrentPosition();
+        window.showCurrentPosition();
     }
 
     function registerData(data) {
-        if (hotspots[data.deviceId]) return;
+        var t = (new Date()).getTime();
+        if (hotspots[data.deviceId]) {
+            hotspots[data.deviceId].latest = t;
+            return;
+        }
 
         var md = {
             position: { lat: data.Lat, lng: data.Long },
@@ -72,17 +76,23 @@ $(function () {
         };
         var m = new google.maps.Marker(md);
         var m2 = new google.maps.Marker(md);
-        hotspots[data.deviceId] = { deviceObj: data, marker: m, markerbg: m2 };
-        setTimeout(function() { clearData(data); }, 30000);
+        hotspots[data.deviceId] =
+            { deviceObj: data, marker: m, markerbg: m2, latest: t };
+        // 29秒後に地図から消すかの判断をするようタイマーをセット
+        setTimeout(function() { clearData(data); }, 29000);
     }
 
+    // 5秒以内にデバイスのデータが届いていなければ地図から消す
     function clearData(data) {
+        var t = (new Date()).getTime();
+        if (t - hotspots[data.deviceId].latest < 5000) { return; }
+
         hotspots[data.deviceId].marker.setMap(null);
         hotspots[data.deviceId].markerbg.setMap(null);
         delete hotspots[data.deviceId];
     }
 
-    function showCurrentPosition() {
+    window.showCurrentPosition = function (nextfn) {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 function (position) {
@@ -97,11 +107,13 @@ $(function () {
                                 scale: 4
                             }
                         });
+                        window.gmap_currentpos = marker;
                     } else {
                         marker.setPosition = { lat: position.coords.latitude, lng: position.coords.longitude };
                     }
                     $(".title a:first").text(position.coords.latitude+","+position.coords.longitude);
                     console.log(position.coords);
+                    if (nextfn) { nextfn(position); }
                 }, 
                 function (error) {
                     switch(error.code) {
@@ -122,7 +134,7 @@ $(function () {
         } else { 
             console.error("Geolocation is not supported by this browser.");
         }
-    }
+    };
 
     window.showCircles = function (data) {
         var m = hotspots[data.deviceId].marker;
@@ -130,15 +142,17 @@ $(function () {
         m.setMap(window.gmap);
         m2.setMap(window.gmap);
 
-        var drawCircle = function(m2, i) {
-            m2.icon.fillOpacity = i / 500.0;
-            m2.icon.scale = (100 - i) * 2;
-            i--;
-            if (i == 0) { i = 100; }
-            //console.log(m2, i);
-            setTimeout(function() { drawCircle(m2, i); }, 80);
+        var drawCircle = function(mm, i) {
+            mm.icon.fillOpacity = (50 - i) / 100.0 + 0.08;
+            mm.icon.scale = i * 2.5;
+            i++;
+            if (i == 50) { i = 0; }
+            if (hotspots[data.deviceId]) {
+                mm.setMap(window.gmap);
+                setTimeout(function() { drawCircle(mm, i); }, 20);
+            }
         };
-        drawCircle(m2, 100);
+        drawCircle(m2, 0);
     };
 
     initialize_map();
