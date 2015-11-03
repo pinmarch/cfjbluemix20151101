@@ -59,7 +59,7 @@ $(function() {
 		    fin_height = iheight / fit_ratio * canheight / divheight;
 
 		ctx.drawImage(radar_image_obj,
-			(300 - fin_width) / 2, (300 - fin_height) / 2,
+			(canwidth - fin_width) / 2, (canheight - fin_height) / 2,
 			fin_width, fin_height);
 	};
 
