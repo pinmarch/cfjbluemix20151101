@@ -27,6 +27,9 @@ $(function() {
 	var radar_image_obj = null;
 	var radar_image_ready = false;
 	var ctx = null;
+	var canvas2 = $('<canvas></canvas>');
+	var ctxbg = null;
+	var radar_positions = null;
 
 	function init_canvas() {
 		var canvas = document.getElementById('radar_canvas');
@@ -47,6 +50,7 @@ $(function() {
 
 	window.showRadar = function (data) {
 		if (!ctx || !radar_image_ready) { return; }
+		radar_positions = data;
 
 		var canvas = $("#radar_canvas"),
 		    divwidth = canvas.innerWidth(), divheight = canvas.innerHeight(),
@@ -54,13 +58,38 @@ $(function() {
 		    iwidth = radar_image_obj.width, iheight = radar_image_obj.height,
 		    fit_ratio_w = iwidth / divwidth,
 		    fit_ratio_h = iheight / divheight,
-		    fit_ratio = (fit_ratio_w > fit_ratio_h) ? fit_ratio_w : fit_ratio_h,
-		    fin_width = iwidth / fit_ratio * canwidth / divwidth,
-		    fin_height = iheight / fit_ratio * canheight / divheight;
+		    fit_ratio = (fit_ratio_w < fit_ratio_h) ? fit_ratio_w : fit_ratio_h,
+		    fin_width = iwidth * fit_ratio,
+		    fin_height = iheight * fit_ratio;
+		// console.log(fit_ratio, fin_width, fin_height);
 
-		ctx.drawImage(radar_image_obj,
-			(canwidth - fin_width) / 2, (canheight - fin_height) / 2,
-			fin_width, fin_height);
+		if (ctxbg != null) { return; }
+
+		var testpoint = 0;
+		var drawfunc = function() {
+			canvas2.attr('width', divwidth);
+			canvas2.attr('height', divheight);
+			ctxbg = canvas2.get(0).getContext('2d');
+			ctxbg.fillRect(0, 0, divwidth, divheight);
+			ctxbg.drawImage(radar_image_obj,
+				(divwidth - fin_width) / 2, (divheight - fin_height) / 2,
+				fin_width, fin_height);
+			ctxbg.translate(divwidth / 2, divheight / 2);
+			ctxbg.beginPath();
+			ctxbg.arc(Math.sin(testpoint / (2 * Math.PI)) * 30,
+			          Math.cos(testpoint / (2 * Math.PI)) * 30,
+			          4, 0, 2 * Math.PI);
+			ctxbg.fillStyle = "#f00";
+			ctxbg.fill();
+			testpoint++;
+
+			ctx.scale(canwidth / divwidth, canheight / divheight);
+			ctx.drawImage(canvas2.get(0), 0, 0);
+			ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+			setTimeout(drawfunc, 30);
+		};
+		setTimeout(drawfunc, 30);
 	};
 
 	init_canvas();
