@@ -63,10 +63,9 @@ $(function() {
 		    fin_height = iheight * fit_ratio;
 		// console.log(fit_ratio, fin_width, fin_height);
 
-		if (ctxbg != null) { return; }
-
-		var testpoint = 0;
-		var drawfunc = function() {
+		var testpoint;
+		var me = this;
+		this.drawfunc = function() {
 			canvas2.attr('width', divwidth);
 			canvas2.attr('height', divheight);
 			ctxbg = canvas2.get(0).getContext('2d');
@@ -87,9 +86,13 @@ $(function() {
 			ctx.drawImage(canvas2.get(0), 0, 0);
 			ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-			setTimeout(drawfunc, 30);
+			setTimeout(me.drawfunc, 30);
 		};
-		setTimeout(drawfunc, 30);
+		testpoint = 0;
+
+		if (ctxbg != null) { return; }
+
+		setTimeout(this.drawfunc, 30);
 	};
 
 	init_canvas();
