@@ -11,7 +11,7 @@ $(function() {
 		e.preventDefault();
 		$("#map").hide();
 		$("#radar").show();
-		window.showRadar();
+		window.showRadar(null);
 	});
 
 	$("#set_center").click(function(e) {
@@ -29,7 +29,10 @@ $(function() {
 	var ctx = null;
 	var canvas2 = $('<canvas></canvas>');
 	var ctxbg = null;
-	var radar_positions = null;
+	var canvas_alpha = 0;
+	var radar_positions = {};
+	var radar_center = null;
+	var radar_mindistance = -1;
 
 	function init_canvas() {
 		var canvas = document.getElementById('radar_canvas');
@@ -55,11 +58,65 @@ $(function() {
 
 			window.compass_rotate = alpha;
 		});
+
+		window.showCurrentPosition(function(position) {
+			radar_center = { lat: position.coords.latitude, lng: position.coords.longitude };
+		});
  	}
+
+	function calc_pointrelation(latlng1, latlng2) {
+		var r = 6378137; // radius of the earth (m)
+		var d = r * 1 / Math.cos(
+			Math.sin(latlng1.lat) * Math.sin(latlng2.lat) +
+			Math.cos(latlng1.lat) * Math.cos(latlng2.lat) *
+			Math.cos(latlng2.lng - latlng1.lng));
+		var phi = 90 - Math.atan2(
+			Math.cos(latlng1.lat) * Math.tan(latlng2.lat) -
+			Math.sin(latlng1.lat) * Math.cos(latlng2.lng - latlng1.lng),
+			Math.sin(latlng2.lng - latlng1.lng));
+		return { d: d, phi: phi / Math.PI * 180 };
+	}
+
+	function calc_distancesforplot(data) {
+		var mindist = Number.MAX_VALUE;
+		Object.keys(data).forEach(function(v) {
+			var rel = calc_pointrelation(radar_center, data[v]);
+			if (mindist > rel.d) { mindist = rel.d; }
+			data[v].distance = rel.d;
+			data[v].theta = rel.phi;
+			// console.log(rel);
+		});
+
+		radar_mindistance = mindist;
+	}
+
+	function calc_plotpoint(data, imagerad) {
+		var mindist = radar_mindistance < 30 ? 30 : (radar_mindistance * 1.2);
+
+		Object.keys(data).forEach(function(v) {
+			data[v].r = imagerad * data[v].distance / mindist;
+		});
+	}
+
+	function plot_onradar(ctx, spot, alpha) {
+		ctx.globalAlpha = alpha;
+		ctx.beginPath();
+		ctx.arc(Math.sin(-spot.theta * Math.PI / 180) * spot.r,
+		        Math.cos(-spot.theta * Math.PI / 180) * spot.r,
+		        4, 0, 2 * Math.PI);
+		ctx.fillStyle = "#f00";
+		ctx.fill();
+		ctx.globalAlpha = 1.0;
+		// console.log(spot.r, spot.theta);
+	}
 
 	window.showRadar = function (data) {
 		if (!ctx || !radar_image_ready) { return; }
-		radar_positions = data;
+		if (data) {
+			data.lng = data.Long;
+			data.lat = data.Lat;
+			radar_positions[data.DeviceId] = data;
+		}
 
 		var canvas = $("#radar_canvas"),
 		    divwidth = canvas.innerWidth(), divheight = canvas.innerHeight(),
@@ -72,7 +129,6 @@ $(function() {
 		    fin_height = iheight * fit_ratio;
 		// console.log(fit_ratio, fin_width, fin_height);
 
-		var testpoint;
 		var me = this;
 		this.drawfunc = function() {
 			canvas2.attr('width', divwidth);
@@ -84,13 +140,15 @@ $(function() {
 				fin_width, fin_height);
 			ctxbg.translate(divwidth / 2, divheight / 2);
 			ctxbg.rotate(window.compass_rotate + Math.PI);
-			ctxbg.beginPath();
-			ctxbg.arc(Math.sin(-testpoint * 3 * Math.PI / 180) * 30,
-			          Math.cos(-testpoint * 3 * Math.PI / 180) * 30,
-			          4, 0, 2 * Math.PI);
-			ctxbg.fillStyle = "#f00";
-			ctxbg.fill();
-			testpoint++;
+			// console.log(radar_positions);
+			if (radar_positions) {
+				calc_plotpoint(radar_positions, fin_width / 2);
+				Object.keys(radar_positions).forEach(function(v) {
+					plot_onradar(ctxbg, radar_positions[v], Math.sin(canvas_alpha) * 0.3 + 0.7);
+				});
+			}
+			canvas_alpha++;
+			if (canvas_alpha == 360) { canvas_alpha = 0; }
 
 			ctx.scale(canwidth / divwidth, canheight / divheight);
 			ctx.drawImage(canvas2.get(0), 0, 0);
@@ -98,10 +156,22 @@ $(function() {
 
 			setTimeout(me.drawfunc, 30);
 		};
-		testpoint = 0;
 
 		if (ctxbg != null) { return; }
 
+		var refreshfunc = function() {
+			if ($("#radar:visible").length > 0) {
+				window.showCurrentPosition(function(position) {
+					radar_center = { lat: position.coords.latitude, lng: position.coords.longitude };
+					calc_distancesforplot(radar_positions);
+					$("#radar .distance-text span").text(
+						(Math.floor(radar_mindistance * 100) / 100) + "m");
+				});
+			}
+			setTimeout(refreshfunc, 500);
+		};
+
+		refreshfunc();
 		setTimeout(this.drawfunc, 30);
 	};
 

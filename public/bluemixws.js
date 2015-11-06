@@ -117,7 +117,7 @@ $(function () {
                         marker.setPosition = { lat: position.coords.latitude, lng: position.coords.longitude };
                     }
                     $(".title a:first").text(position.coords.latitude+","+position.coords.longitude);
-                    console.log(position.coords);
+                    // console.log(position.coords);
                     if (nextfn) { nextfn(position); }
                 }, 
                 function (error) {
