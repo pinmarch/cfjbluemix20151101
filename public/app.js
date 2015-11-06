@@ -46,7 +46,16 @@ $(function() {
 			radar_image_ready = true;
 		};
 		radar_image_obj.src = radar_image_url;
-	}
+
+		window.compass_rotate = 0;
+		window.addEventListener('deviceorientation', function(event) {
+			var alpha = event.alpha; // it's needed
+			// var beta = event.beta;
+			// var gamma = event.gamma;
+
+			window.compass_rotate = alpha;
+		});
+ 	}
 
 	window.showRadar = function (data) {
 		if (!ctx || !radar_image_ready) { return; }
@@ -56,8 +65,8 @@ $(function() {
 		    divwidth = canvas.innerWidth(), divheight = canvas.innerHeight(),
 		    canwidth = 300, canheight = 300,
 		    iwidth = radar_image_obj.width, iheight = radar_image_obj.height,
-		    fit_ratio_w = iwidth / divwidth,
-		    fit_ratio_h = iheight / divheight,
+		    fit_ratio_w = (divwidth * 0.8) / iwidth,
+		    fit_ratio_h = (divheight * 0.8) / iheight,
 		    fit_ratio = (fit_ratio_w < fit_ratio_h) ? fit_ratio_w : fit_ratio_h,
 		    fin_width = iwidth * fit_ratio,
 		    fin_height = iheight * fit_ratio;
@@ -74,9 +83,10 @@ $(function() {
 				(divwidth - fin_width) / 2, (divheight - fin_height) / 2,
 				fin_width, fin_height);
 			ctxbg.translate(divwidth / 2, divheight / 2);
+			ctxbg.rotate(window.compass_rotate + Math.PI);
 			ctxbg.beginPath();
-			ctxbg.arc(Math.sin(testpoint / (2 * Math.PI)) * 30,
-			          Math.cos(testpoint / (2 * Math.PI)) * 30,
+			ctxbg.arc(Math.sin(-testpoint * 3 * Math.PI / 180) * 30,
+			          Math.cos(-testpoint * 3 * Math.PI / 180) * 30,
 			          4, 0, 2 * Math.PI);
 			ctxbg.fillStyle = "#f00";
 			ctxbg.fill();
