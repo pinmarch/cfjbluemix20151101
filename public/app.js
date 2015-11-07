@@ -66,15 +66,19 @@ $(function() {
 
 	function calc_pointrelation(latlng1, latlng2) {
 		var r = 6378137; // radius of the earth (m)
-		var d = r * 1 / Math.cos(
-			Math.sin(latlng1.lat) * Math.sin(latlng2.lat) +
-			Math.cos(latlng1.lat) * Math.cos(latlng2.lat) *
-			Math.cos(latlng2.lng - latlng1.lng));
+		var lat1 = latlng1.lat * Math.PI / 180,
+		    lng1 = latlng1.lng * Math.PI / 180,
+		    lat2 = latlng2.lat * Math.PI / 180,
+		    lng2 = latlng2.lng * Math.PI / 180;
+		var d = r * Math.acos(
+			Math.sin(lat1) * Math.sin(lat2) +
+			Math.cos(lat1) * Math.cos(lat2) *
+			Math.cos(lng2 - lng1));
 		var phi = 90 - Math.atan2(
-			Math.cos(latlng1.lat) * Math.tan(latlng2.lat) -
-			Math.sin(latlng1.lat) * Math.cos(latlng2.lng - latlng1.lng),
-			Math.sin(latlng2.lng - latlng1.lng));
-		return { d: d, phi: phi / Math.PI * 180 };
+			Math.cos(lat1) * Math.tan(lat2) -
+			Math.sin(lat1) * Math.cos(lng2 - lng1),
+			Math.sin(lng2 - lng1));
+		return { "d": d, "phi": phi };
 	}
 
 	function calc_distancesforplot(data) {
@@ -144,7 +148,7 @@ $(function() {
 			if (radar_positions) {
 				calc_plotpoint(radar_positions, fin_width / 2);
 				Object.keys(radar_positions).forEach(function(v) {
-					plot_onradar(ctxbg, radar_positions[v], Math.sin(canvas_alpha) * 0.3 + 0.7);
+					plot_onradar(ctxbg, radar_positions[v], Math.sin(canvas_alpha / Math.PI * 180) * 0.3 + 0.7);
 				});
 			}
 			canvas_alpha++;
@@ -157,7 +161,7 @@ $(function() {
 			setTimeout(me.drawfunc, 30);
 		};
 
-		if (ctxbg != null) { return; }
+		if (ctxbg !== null) { return; }
 
 		var refreshfunc = function() {
 			if ($("#radar:visible").length > 0) {
